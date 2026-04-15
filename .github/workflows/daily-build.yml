@@ -57,7 +57,7 @@ jobs:
       - name: 'Setup ENV'
         run: |
           echo "Executed at: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "BUILD_NUMBER=2026041530" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=2026041526" >> $GITHUB_ENV
 
       - name: Warn if GPG verification is skipped
         if: ${{ github.event.inputs.ONEKEY_ALLOW_SKIP_GPG_VERIFICATION == 'true' }}
@@ -98,5 +98,4 @@ jobs:
       #     git config --local user.name "GitHub Action"
       #     git commit -am "build ${{ needs.get-commit-id.outputs.upstream_id }} in $CURRENT_TIME"
       #     git push --set-upstream origin buildhistory
-
 

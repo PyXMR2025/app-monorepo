@@ -1448,3 +1448,5 @@ minimizable
 maximizable
 fullscreenable
 frecency
+ledgerhq
+keyrings

@@ -798,9 +798,8 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
         }
         case 'error': {
           set(swapQuoteEventCompletedAtom(), true);
-          if (platformEnv.isExtension) {
-            set(swapQuoteFetchingAtom(), false);
-          }
+          set(swapQuoteFetchingAtom(), false);
+          set(swapQuoteActionLockAtom(), (v) => ({ ...v, actionLock: false }));
           this.closeQuoteEvent();
           break;
         }

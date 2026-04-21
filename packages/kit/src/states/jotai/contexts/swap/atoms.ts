@@ -263,6 +263,7 @@ export const {
 } = contextAtomComputed((get) => {
   const list = get(swapQuoteListAtom());
   const fromTokenAmount = get(swapFromTokenAmountAtom());
+  const sortType = get(swapProviderSortAtom());
   const manualSelectQuoteProviders = get(swapManualSelectQuoteProvidersAtom());
   const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
   const currentEventProviderKeys = get(swapQuoteCurrentEventProviderKeysAtom());
@@ -273,12 +274,12 @@ export const {
           currentEventProviderKeySet.has(buildSwapQuoteProviderKey(quote)),
         )
       : list;
-  const recommendedSortedList = sortSwapQuotes(currentEventQuoteList, {
-    sort: ESwapProviderSort.RECOMMENDED,
+  const currentEventSortedList = sortSwapQuotes(currentEventQuoteList, {
+    sort: sortType,
     fromTokenAmount: fromTokenAmount.value,
   });
   return selectSwapCurrentQuote({
-    sortedQuotes: recommendedSortedList,
+    sortedQuotes: currentEventSortedList,
     manualSelect: manualSelectQuoteProviders ?? undefined,
     quoteEventTotalCount,
     currentEventProviderKeys,

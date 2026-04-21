@@ -248,8 +248,8 @@ const SwapMainLoad = ({ swapInitParams, pageType }: ISwapMainLoadProps) => {
   }
 
   const quoteResultRef = useRef<IFetchQuoteResult | undefined>(undefined);
-  if (quoteResultRef.current !== currentQuoteRes) {
-    quoteResultRef.current = currentQuoteRes;
+  if (quoteResultRef.current !== swapStepData.quoteResult) {
+    quoteResultRef.current = swapStepData.quoteResult;
   }
 
   const preSwapDataRef = useRef<ISwapPreSwapData | undefined>(undefined);

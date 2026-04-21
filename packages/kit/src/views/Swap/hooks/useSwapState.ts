@@ -43,6 +43,7 @@ import {
   useSwapQuoteApproveAllowanceUnLimitAtom,
   useSwapQuoteCurrentEventProviderKeysAtom,
   useSwapQuoteCurrentSelectAtom,
+  useSwapQuoteEventCompletedAtom,
   useSwapQuoteEventTotalCountAtom,
   useSwapQuoteFetchingAtom,
   useSwapQuoteIntervalCountAtom,
@@ -51,6 +52,7 @@ import {
   useSwapSelectedFromTokenBalanceAtom,
   useSwapShouldRefreshQuoteAtom,
   useSwapSilenceQuoteLoading,
+  useSwapSortedQuoteListAtom,
   useSwapSpeedQuoteResultAtom,
   useSwapToTokenAmountAtom,
   useSwapTypeSwitchAtom,
@@ -134,19 +136,23 @@ export function useSwapQuoteLoading() {
 
 export function useSwapQuoteEventFetching() {
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
+  const [quoteEventCompleted] = useSwapQuoteEventCompletedAtom();
   const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
 
   return isSwapQuoteEventFetching({
     quoteEventTotalCount,
     currentEventProviderKeys,
+    quoteEventCompleted,
   });
 }
 
 export function useSwapQuoteProgressState() {
   const quoteLoading = useSwapQuoteLoading();
   const quoteEventFetching = useSwapQuoteEventFetching();
+  const [sortedQuotes] = useSwapSortedQuoteListAtom();
   const [quoteCurrentSelect] = useSwapQuoteCurrentSelectAtom();
   const [manualSelectQuote] = useSwapManualSelectQuoteProvidersAtom();
+  const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
   const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
 
   return useMemo(
@@ -154,16 +160,20 @@ export function useSwapQuoteProgressState() {
       getSwapQuoteProgressState({
         quoteLoading,
         quoteEventFetching,
+        sortedQuotes,
         quoteCurrentSelect,
         manualSelect: manualSelectQuote ?? undefined,
+        quoteEventTotalCount,
         currentEventProviderKeys,
       }),
     [
       currentEventProviderKeys,
       manualSelectQuote,
       quoteCurrentSelect,
+      quoteEventTotalCount,
       quoteEventFetching,
       quoteLoading,
+      sortedQuotes,
     ],
   );
 }

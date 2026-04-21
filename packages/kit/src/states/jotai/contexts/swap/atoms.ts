@@ -4,7 +4,10 @@ import { ESwapDirection } from '@onekeyhq/kit/src/views/Market/MarketDetailV2/co
 import type { IToken } from '@onekeyhq/kit/src/views/Market/MarketDetailV2/components/SwapPanel/types';
 import { getNetworkIdsMap } from '@onekeyhq/shared/src/config/networkIds';
 import { dangerAllNetworkRepresent } from '@onekeyhq/shared/src/config/presetNetworks';
-import { sortSwapQuotes } from '@onekeyhq/shared/src/utils/swapQuoteSortUtils';
+import {
+  selectBestQuote,
+  sortSwapQuotes,
+} from '@onekeyhq/shared/src/utils/swapQuoteSortUtils';
 import {
   checkWrappedTokenPair,
   equalTokenNoCaseSensitive,
@@ -45,8 +48,6 @@ import {
 } from '@onekeyhq/shared/types/swap/types';
 
 import { createJotaiContext } from '../../utils/createJotaiContext';
-
-import { selectSwapCurrentQuote } from './quoteProgress';
 
 import type { IAccountSelectorActiveAccountInfo } from '../accountSelector';
 
@@ -222,6 +223,11 @@ export const {
 });
 
 export const {
+  atom: swapQuoteEventCompletedAtom,
+  use: useSwapQuoteEventCompletedAtom,
+} = contextAtom<boolean>(false);
+
+export const {
   atom: swapQuoteCurrentEventProviderKeysAtom,
   use: useSwapQuoteCurrentEventProviderKeysAtom,
 } = contextAtom<string[]>([]);
@@ -250,13 +256,8 @@ export const {
 } = contextAtomComputed((get) => {
   const list = get(swapSortedQuoteListAtom());
   const manualSelectQuoteProviders = get(swapManualSelectQuoteProvidersAtom());
-  const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
-  const currentEventProviderKeys = get(swapQuoteCurrentEventProviderKeysAtom());
-  return selectSwapCurrentQuote({
-    sortedQuotes: list,
+  return selectBestQuote(list, {
     manualSelect: manualSelectQuoteProviders ?? undefined,
-    quoteEventTotalCount,
-    currentEventProviderKeys,
   });
 });
 

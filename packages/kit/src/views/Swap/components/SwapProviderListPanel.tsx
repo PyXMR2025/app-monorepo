@@ -22,6 +22,7 @@ import {
   useSwapFromTokenAmountAtom,
   useSwapManualSelectQuoteProvidersAtom,
   useSwapProviderSortAtom,
+  useSwapQuoteCurrentEventProviderKeysAtom,
   useSwapQuoteCurrentSelectAtom,
   useSwapQuoteEventTotalCountAtom,
   useSwapSelectFromTokenAtom,
@@ -29,6 +30,7 @@ import {
   useSwapSortedQuoteListAtom,
   useSwapTypeSwitchAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
+import { buildSwapQuoteProviderKey } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -138,6 +140,20 @@ const SwapProviderListPanel = ({
   const quoteEventFetching = useSwapQuoteEventFetching();
   const [swapTypeSwitch] = useSwapTypeSwitchAtom();
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
+  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
+  const currentEventProviderKeySet = useMemo(
+    () => new Set(currentEventProviderKeys),
+    [currentEventProviderKeys],
+  );
+  const quoteListForDisplay = useMemo(
+    () =>
+      quoteEventTotalCount.count > 0
+        ? swapSortedList.filter((item) =>
+            currentEventProviderKeySet.has(buildSwapQuoteProviderKey(item)),
+          )
+        : swapSortedList,
+    [currentEventProviderKeySet, quoteEventTotalCount.count, swapSortedList],
+  );
 
   // Cache the previous list to show during refresh (prevents flash to empty)
   const cachedListRef = useRef<IFetchQuoteResult[]>([]);
@@ -210,8 +226,8 @@ const SwapProviderListPanel = ({
   const wasWaitingForNewQuote = isWaitingForNewQuoteRef.current;
 
   // Update cache when we have new data
-  if (swapSortedList.length > 0) {
-    cachedListRef.current = swapSortedList;
+  if (quoteListForDisplay.length > 0) {
+    cachedListRef.current = quoteListForDisplay;
     hadPreviousQuotesRef.current = true;
     isRefreshingRef.current = false;
     isWaitingForNewQuoteRef.current = false;
@@ -221,10 +237,11 @@ const SwapProviderListPanel = ({
   // Show cached data when: loading with empty list but had previous data, OR during refresh
   const displayList =
     (isLoading || isRefreshingRef.current) &&
-    swapSortedList.length === 0 &&
+    quoteEventTotalCount.count === 0 &&
+    quoteListForDisplay.length === 0 &&
     cachedListRef.current.length > 0
       ? cachedListRef.current
-      : swapSortedList;
+      : quoteListForDisplay;
 
   // Track previous provider keys to determine which items are new
   const prevProviderKeysRef = useRef<Set<string>>(new Set());
@@ -666,7 +683,10 @@ const SwapProviderListPanel = ({
   // Number of skeleton placeholders for providers not yet received
   const remainingSkeletonCount =
     hasReceivedTotal && quoteEventFetching
-      ? Math.max(0, quoteEventTotalCount.count - displayList.length)
+      ? Math.max(
+          0,
+          quoteEventTotalCount.count - currentEventProviderKeys.length,
+        )
       : 0;
 
   const contentArea = (

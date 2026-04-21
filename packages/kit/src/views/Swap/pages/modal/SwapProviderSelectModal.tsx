@@ -22,11 +22,14 @@ import {
   useSwapFromTokenAmountAtom,
   useSwapManualSelectQuoteProvidersAtom,
   useSwapProviderSortAtom,
+  useSwapQuoteCurrentEventProviderKeysAtom,
   useSwapQuoteCurrentSelectAtom,
+  useSwapQuoteEventTotalCountAtom,
   useSwapSelectFromTokenAtom,
   useSwapSelectToTokenAtom,
   useSwapSortedQuoteListAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
+import { buildSwapQuoteProviderKey } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -74,6 +77,21 @@ const SwapProviderSelectModal = () => {
   const [providerSort, setProviderSort] = useSwapProviderSortAtom();
   const [settingsPersist] = useSettingsPersistAtom();
   const [currentSelectQuote] = useSwapQuoteCurrentSelectAtom();
+  const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
+  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
+  const currentEventProviderKeySet = useMemo(
+    () => new Set(currentEventProviderKeys),
+    [currentEventProviderKeys],
+  );
+  const quoteListForDisplay = useMemo(
+    () =>
+      quoteEventTotalCount.count > 0
+        ? swapSortedList.filter((item) =>
+            currentEventProviderKeySet.has(buildSwapQuoteProviderKey(item)),
+          )
+        : swapSortedList,
+    [currentEventProviderKeySet, quoteEventTotalCount.count, swapSortedList],
+  );
 
   const onSelectSortChange = useCallback(
     (value: ESwapProviderSort) => {
@@ -108,10 +126,10 @@ const SwapProviderSelectModal = () => {
     [intl],
   );
   const sectionData = useMemo(() => {
-    const availableList = swapSortedList.filter(
+    const availableList = quoteListForDisplay.filter(
       (item) => item.toAmount && !item.limit?.min && !item.limit?.max,
     );
-    const unavailableList = swapSortedList.filter(
+    const unavailableList = quoteListForDisplay.filter(
       (item) => !item.toAmount || item.limit?.min || item.limit?.max,
     );
     return [
@@ -136,7 +154,7 @@ const SwapProviderSelectModal = () => {
           ]
         : []),
     ];
-  }, [intl, swapSortedList]);
+  }, [intl, quoteListForDisplay]);
   const onSelectQuote = useCallback(
     (item: IFetchQuoteResult) => {
       setSwapManualSelect(item);

@@ -101,7 +101,6 @@ import {
   swapSelectedToTokenBalanceAtom,
   swapShouldRefreshQuoteAtom,
   swapSilenceQuoteLoading,
-  swapSortedQuoteListAtom,
   swapSpeedQuoteFetchingAtom,
   swapSpeedQuoteResultAtom,
   swapToTokenAmountAtom,
@@ -197,6 +196,24 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
 
   cleanManualSelectQuoteProviders = contextAtomMethod((get, set) => {
     set(swapManualSelectQuoteProvidersAtom(), undefined);
+  });
+
+  reconcileManualSelectQuoteProviders = contextAtomMethod((get, set) => {
+    const manualSelectQuoteProvider = get(swapManualSelectQuoteProvidersAtom());
+    if (!manualSelectQuoteProvider) {
+      return;
+    }
+
+    const currentEventProviderKeys = get(
+      swapQuoteCurrentEventProviderKeysAtom(),
+    );
+    if (
+      !currentEventProviderKeys.includes(
+        buildSwapQuoteProviderKey(manualSelectQuoteProvider),
+      )
+    ) {
+      set(swapManualSelectQuoteProvidersAtom(), undefined);
+    }
   });
 
   catchSwapTokensMap = contextAtomMethod(
@@ -754,6 +771,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
           break;
         }
         case 'done': {
+          this.reconcileManualSelectQuoteProviders.call(set);
           set(swapQuoteEventCompletedAtom(), true);
           set(swapQuoteActionLockAtom(), (v) => ({ ...v, actionLock: false }));
           if (platformEnv.isExtension) {
@@ -1206,10 +1224,6 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       const swapSupportAllNetworks = get(swapNetworksIncludeAllNetworkAtom());
       const quoteResult = get(swapQuoteCurrentSelectAtom());
       const tokenMetadata = get(swapTokenMetadataAtom());
-      const sortedQuotes = get(swapSortedQuoteListAtom());
-      const manualSelectQuoteProviders = get(
-        swapManualSelectQuoteProvidersAtom(),
-      );
       const quoteLoading =
         get(swapQuoteFetchingAtom()) || get(swapSilenceQuoteLoading());
       const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
@@ -1225,11 +1239,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       const { isWaitingActionableQuote } = getSwapQuoteProgressState({
         quoteLoading,
         quoteEventFetching,
-        sortedQuotes,
         quoteCurrentSelect: quoteResult,
-        manualSelect: manualSelectQuoteProviders ?? undefined,
-        quoteEventTotalCount,
-        currentEventProviderKeys,
       });
       const fromTokenAmount = get(swapFromTokenAmountAtom());
       let alertsRes: ISwapAlertState[] = [];

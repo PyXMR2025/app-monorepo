@@ -38,7 +38,6 @@ import {
   useSwapBuildTxFetchingAtom,
   useSwapFromTokenAmountAtom,
   useSwapLimitPriceUseRateAtom,
-  useSwapManualSelectQuoteProvidersAtom,
   useSwapProTradeTypeAtom,
   useSwapQuoteApproveAllowanceUnLimitAtom,
   useSwapQuoteCurrentEventProviderKeysAtom,
@@ -52,7 +51,6 @@ import {
   useSwapSelectedFromTokenBalanceAtom,
   useSwapShouldRefreshQuoteAtom,
   useSwapSilenceQuoteLoading,
-  useSwapSortedQuoteListAtom,
   useSwapSpeedQuoteResultAtom,
   useSwapToTokenAmountAtom,
   useSwapTypeSwitchAtom,
@@ -149,32 +147,16 @@ export function useSwapQuoteEventFetching() {
 export function useSwapQuoteProgressState() {
   const quoteLoading = useSwapQuoteLoading();
   const quoteEventFetching = useSwapQuoteEventFetching();
-  const [sortedQuotes] = useSwapSortedQuoteListAtom();
   const [quoteCurrentSelect] = useSwapQuoteCurrentSelectAtom();
-  const [manualSelectQuote] = useSwapManualSelectQuoteProvidersAtom();
-  const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
-  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
 
   return useMemo(
     () =>
       getSwapQuoteProgressState({
         quoteLoading,
         quoteEventFetching,
-        sortedQuotes,
         quoteCurrentSelect,
-        manualSelect: manualSelectQuote ?? undefined,
-        quoteEventTotalCount,
-        currentEventProviderKeys,
       }),
-    [
-      currentEventProviderKeys,
-      manualSelectQuote,
-      quoteCurrentSelect,
-      quoteEventTotalCount,
-      quoteEventFetching,
-      quoteLoading,
-      sortedQuotes,
-    ],
+    [quoteCurrentSelect, quoteEventFetching, quoteLoading],
   );
 }
 

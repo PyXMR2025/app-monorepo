@@ -5,6 +5,7 @@ import {
   handleAuthCommandDiscoveryFallback,
   registerAuthCommands,
   registerBalanceCommand,
+  registerDeviceCommands,
   registerLogoutCommand,
   registerMarketCommands,
   registerSchemaCommand,
@@ -16,6 +17,7 @@ import {
   registerVersionCommand,
   registerWalletHistoryCommand,
 } from './commands';
+import { disposeSDK } from './commands/device/hardware-sdk';
 import { secureCache } from './core';
 import { createSignalCleanupHandler } from './core/auth/auth-flow-interruption';
 import { ERROR_CODES } from './errors';
@@ -82,13 +84,17 @@ registerSwapCommands(program);
 registerSecurityCommands(program);
 registerWalletHistoryCommand(program);
 registerSchemaCommand(program);
+registerDeviceCommands(program);
 
-// Signal handlers: use Unix-conventional exit codes (128 + signal number)
+// Signal handlers: use Unix-conventional exit codes (128 + signal number).
+// disposeHardwareSdk releases the USB transport — otherwise Node hangs ~26s
+// waiting on open handles (poll timers, event listeners).
 process.on(
   'SIGINT',
   createSignalCleanupHandler({
     exitCode: 130,
     clearSecureCache: () => secureCache.clearAll(),
+    disposeHardwareSdk: () => disposeSDK(),
   }),
 );
 process.on(
@@ -96,6 +102,7 @@ process.on(
   createSignalCleanupHandler({
     exitCode: 143,
     clearSecureCache: () => secureCache.clearAll(),
+    disposeHardwareSdk: () => disposeSDK(),
   }),
 );
 process.on(
@@ -103,8 +110,24 @@ process.on(
   createSignalCleanupHandler({
     exitCode: 129,
     clearSecureCache: () => secureCache.clearAll(),
+    disposeHardwareSdk: () => disposeSDK(),
   }),
 );
+
+// Normal exit path: Commander actions set process.exitCode and return without
+// calling process.exit(). Without disposeSDK, USB transport keeps the event
+// loop alive for ~26s before Node gives up. beforeExit fires when the loop
+// would otherwise idle, giving us the last chance to release it.
+let sdkDisposeStarted = false;
+process.on('beforeExit', () => {
+  if (sdkDisposeStarted) {
+    return;
+  }
+  sdkDisposeStarted = true;
+  void disposeSDK().catch(() => {
+    // Best-effort — dispose errors shouldn't block exit.
+  });
+});
 
 if (!handleAuthCommandDiscoveryFallback(process.argv.slice(2))) {
   program.parse();

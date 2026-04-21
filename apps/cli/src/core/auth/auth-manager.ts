@@ -6,7 +6,7 @@ import { createSecureStorage } from '../../infra/keychain-storage';
 import {
   KEYCHAIN_ENCRYPTION_KEY,
   KEYCHAIN_MNEMONIC_KEY,
-  getSignerByImpl,
+  getHdSignerByImpl,
 } from '../../signer';
 import { encrypt, secureWipe } from '../crypto-utils';
 import { secureCache } from '../secure-cache';
@@ -48,7 +48,7 @@ export class AuthManager {
     private readonly sessionStore: AuthSessionStore = new AuthSessionStore(),
     private readonly signerFactory: (
       impl: string,
-    ) => Promise<ISigner> = getSignerByImpl,
+    ) => Promise<ISigner> = getHdSignerByImpl,
     private readonly appTransferLogin: IAppTransferLoginExecutor = startAppTransferLogin,
   ) {
     this.resolver = new AuthSessionResolver(this.storage, this.sessionStore);

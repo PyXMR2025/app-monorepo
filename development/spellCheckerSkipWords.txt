@@ -1449,3 +1449,9 @@ maximizable
 fullscreenable
 frecency
 reactnativeappupdate
+pinentry
+Pinentry
+PINENTRY
+SETDESC
+Bixin
+libsecret

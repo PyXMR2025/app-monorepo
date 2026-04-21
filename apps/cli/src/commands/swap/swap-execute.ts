@@ -1,8 +1,9 @@
 import { loadPending, secureCache, updatePendingStatus } from '../../core';
+import { requireAuthenticatedSession } from '../../core/auth/auth-gate';
 import { resolveChain } from '../../core/chain-resolver';
 import { AppError, ERROR_CODES } from '../../errors';
 import { apiClient } from '../../infra';
-import { getSignerByImpl } from '../../signer';
+import { getSignerFromSession } from '../../signer';
 import { confirmTransaction } from '../../utils/confirm-transaction';
 import { amountToSmallestUnit, feeToWeiHex } from '../../utils/tx-utils';
 
@@ -11,7 +12,6 @@ import { getProtocolConfig } from './swap-protocol-config';
 
 import type { IEndpointEnv } from '../../config';
 import type { OutputFormatter } from '../../output';
-import type { EvmSigner } from '../../signer/impls/evm/EvmSigner';
 import type { Command } from 'commander';
 
 // --- API response types (aligned with transfer.ts) ---
@@ -366,7 +366,6 @@ export function registerSwapExecuteCommand(parent: Command): void {
   parent
     .command('execute')
     .description('Execute a pending swap order (sign + broadcast)')
-    .requiredOption('--chain <chain>', 'Target blockchain (e.g., eth, base)')
     .requiredOption('--order <orderId>', 'Order ID from swap build output')
     .option(
       '--approve-unlimited',
@@ -375,7 +374,6 @@ export function registerSwapExecuteCommand(parent: Command): void {
     .action(
       async (
         options: {
-          chain: string;
           order: string;
           approveUnlimited?: boolean;
         },
@@ -387,9 +385,6 @@ export function registerSwapExecuteCommand(parent: Command): void {
         const skipConfirmation = Boolean(globalOpts.yes);
 
         try {
-          // Validate chain
-          const chainConfig = resolveChain(options.chain);
-
           // Resolve env
           const env = (
             (globalOpts.env as string) === 'prod' ? 'prod' : 'test'
@@ -411,14 +406,8 @@ export function registerSwapExecuteCommand(parent: Command): void {
             );
           }
 
-          // Verify chain matches order
-          if (order.chain !== options.chain) {
-            throw new AppError(
-              ERROR_CODES.PARAM_INVALID_CHAIN.code,
-              `Order chain "${order.chain}" does not match --chain "${options.chain}"`,
-              `Use --chain ${order.chain}`,
-            );
-          }
+          // Resolve chain from the persisted order
+          const chainConfig = resolveChain(order.chain);
 
           // Only pending orders can be executed
           if (order.status !== 'pending') {
@@ -476,7 +465,8 @@ export function registerSwapExecuteCommand(parent: Command): void {
           }
 
           // Get wallet address early — needed for allowance check and address validation
-          const signer = (await getSignerByImpl(chainConfig.impl)) as EvmSigner;
+          const session = await requireAuthenticatedSession();
+          const signer = await getSignerFromSession(session, chainConfig.impl);
           const addressInfo = await signer.getAddress(chainConfig.networkId);
           const fromAddress = addressInfo.address;
 
@@ -601,20 +591,17 @@ export function registerSwapExecuteCommand(parent: Command): void {
               action: confirmAction,
               to: `${swapTxTo} (${order.provider ?? 'swap provider'})`,
               value: `${order.amount} ${order.fromToken.symbol}`,
-              network: options.chain,
+              network: order.chain,
             },
             output,
             skipConfirmation,
           });
 
-          // Prepare sign credentials once for both approve + swap
-          const hdCredential = await signer.getHdCredential();
-          const encodedPassword = await signer.getEncodedPassword();
-          const networkInfo = signer.buildNetworkInfo(chainConfig.networkId);
+          // Common account info for all sign calls
           const accountForSign = {
             address: fromAddress,
             path: addressInfo.path ?? "m/44'/60'/0'/0/0",
-            pub: addressInfo.publicKey,
+            publicKey: addressInfo.publicKey,
           };
 
           let approveTxHash: string | undefined;
@@ -658,9 +645,7 @@ export function registerSwapExecuteCommand(parent: Command): void {
                   chainConfig.feeDecimals,
                 );
                 const resetSigned = await signer.signTransaction({
-                  networkInfo,
-                  password: encodedPassword,
-                  credentials: { hd: hdCredential },
+                  networkId: chainConfig.networkId,
                   account: accountForSign,
                   unsignedTx: { encodedTx: resetBuilt.encodedTx },
                 });
@@ -727,9 +712,7 @@ export function registerSwapExecuteCommand(parent: Command): void {
                   : undefined,
               );
               const approveSigned = await signer.signTransaction({
-                networkInfo,
-                password: encodedPassword,
-                credentials: { hd: hdCredential },
+                networkId: chainConfig.networkId,
                 account: accountForSign,
                 unsignedTx: { encodedTx: approveBuilt.encodedTx },
               });
@@ -839,9 +822,7 @@ export function registerSwapExecuteCommand(parent: Command): void {
             }
 
             const swapSignedTx = await signer.signTransaction({
-              networkInfo,
-              password: encodedPassword,
-              credentials: { hd: hdCredential },
+              networkId: chainConfig.networkId,
               account: accountForSign,
               unsignedTx: { encodedTx: swapBuilt.encodedTx },
             });
@@ -883,13 +864,13 @@ export function registerSwapExecuteCommand(parent: Command): void {
                 status: 'executed',
                 txHash: swapResult.result,
                 ...(approveTxHash ? { approveTxHash } : {}),
-                chain: options.chain,
+                chain: order.chain,
                 from: order.fromToken.symbol,
                 to: order.toToken.symbol,
                 amount: order.amount,
                 message: successMsg,
               },
-              { chain: options.chain },
+              { chain: order.chain },
             );
           } catch (swapError) {
             // Approve succeeded but swap failed — mark as approve_only

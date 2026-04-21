@@ -1,7 +1,9 @@
+import BigNumber from 'bignumber.js';
+
 import { selectBestQuote } from '@onekeyhq/shared/src/utils/swapQuoteSortUtils';
 import type { IFetchQuoteResult } from '@onekeyhq/shared/types/swap/types';
 
-type ISwapActionableQuote = Pick<IFetchQuoteResult, 'toAmount' | 'limit'>;
+type ISwapActionableQuote = Pick<IFetchQuoteResult, 'toAmount'>;
 
 type ISwapQuoteProgressInput = {
   quoteLoading: boolean;
@@ -54,7 +56,7 @@ export function selectSwapCurrentQuote({
 export function isSwapQuoteActionable(
   quoteCurrentSelect?: ISwapActionableQuote,
 ) {
-  return Boolean(quoteCurrentSelect?.toAmount || quoteCurrentSelect?.limit);
+  return new BigNumber(quoteCurrentSelect?.toAmount ?? 0).gt(0);
 }
 
 export function getSwapQuoteProgressState({

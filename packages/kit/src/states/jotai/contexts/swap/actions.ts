@@ -518,9 +518,16 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
               }
             : {}),
         });
+        const currentEventProviderKeys = res.map((quote) =>
+          buildSwapQuoteProviderKey(quote),
+        );
         if (!loadingDelayEnable) {
           set(swapQuoteFetchingAtom(), false);
           set(swapQuoteListAtom(), res);
+          set(
+            swapQuoteCurrentEventProviderKeysAtom(),
+            currentEventProviderKeys,
+          );
           set(swapQuoteEventTotalCountAtom(), {
             count: res.length,
           });
@@ -529,6 +536,10 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
           setTimeout(() => {
             set(swapSilenceQuoteLoading(), false);
             set(swapQuoteListAtom(), res);
+            set(
+              swapQuoteCurrentEventProviderKeysAtom(),
+              currentEventProviderKeys,
+            );
             set(swapQuoteEventTotalCountAtom(), {
               count: res.length,
             });

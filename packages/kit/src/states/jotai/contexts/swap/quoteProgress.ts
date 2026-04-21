@@ -108,8 +108,9 @@ export function selectSwapCurrentQuote({
       }
 
       return (
-        selectBestQuote(currentEventSortedQuotes.filter(isSwapQuoteActionable)) ??
-        manualQuote
+        selectBestQuote(
+          currentEventSortedQuotes.filter(isSwapQuoteActionable),
+        ) ?? manualQuote
       );
     }
 

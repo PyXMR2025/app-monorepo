@@ -86,6 +86,7 @@ import {
   swapProTradeTypeAtom,
   swapProUseSelectBuyTokenAtom,
   swapQuoteActionLockAtom,
+  swapQuoteCurrentEventProviderKeysAtom,
   swapQuoteCurrentSelectAtom,
   swapQuoteEventErrorAtom,
   swapQuoteEventTotalCountAtom,
@@ -107,6 +108,7 @@ import {
   swapTokenMetadataAtom,
   swapTypeSwitchAtom,
 } from './atoms';
+import { buildSwapQuoteProviderKey } from './quoteProgress';
 
 class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
   private quoteInterval: ReturnType<typeof setTimeout> | undefined;
@@ -566,6 +568,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
             const errorData = dataJson as ISwapQuoteEventError;
             if (errorData?.errorMessage) {
               set(swapQuoteListAtom(), []);
+              set(swapQuoteCurrentEventProviderKeysAtom(), []);
               set(swapQuoteEventTotalCountAtom(), { count: 0 });
               set(swapQuoteFetchingAtom(), false);
               set(swapQuoteEventErrorAtom(), errorData.errorMessage);
@@ -617,6 +620,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
               (dataJson as ISwapQuoteEventInfo).totalQuoteCount === 0
             ) {
               const { totalQuoteCount } = dataJson as ISwapQuoteEventInfo;
+              set(swapQuoteCurrentEventProviderKeysAtom(), []);
               set(swapQuoteEventTotalCountAtom(), {
                 eventId: (dataJson as ISwapQuoteEventInfo).eventId,
                 count: totalQuoteCount,
@@ -641,6 +645,14 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                 quoteResultData.data?.length &&
                 quoteEventTotalCount.eventId === quoteResultData.data[0].eventId
               ) {
+                set(swapQuoteCurrentEventProviderKeysAtom(), (keys) => [
+                  ...new Set([
+                    ...keys,
+                    ...quoteResultData.data.map((quote) =>
+                      buildSwapQuoteProviderKey(quote),
+                    ),
+                  ]),
+                ]);
                 const quoteResultsUpdateSlippage = quoteResultData.data.map(
                   (quote) => {
                     if (
@@ -812,6 +824,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
     const fromTokenAmount = get(swapFromTokenAmountAtom());
     const toTokenAmount = get(swapToTokenAmountAtom());
     set(swapQuoteFetchingAtom(), false);
+    set(swapQuoteCurrentEventProviderKeysAtom(), []);
     set(swapQuoteEventTotalCountAtom(), {
       count: 0,
     });
@@ -890,6 +903,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       if (!unResetCount) {
         set(swapQuoteIntervalCountAtom(), 0);
       }
+      set(swapQuoteCurrentEventProviderKeysAtom(), []);
       set(swapBuildTxFetchingAtom(), false);
       set(swapShouldRefreshQuoteAtom(), false);
       const fromTokenAmountNumber = Number(fromTokenAmount.value);

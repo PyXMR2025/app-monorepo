@@ -54,9 +54,9 @@ import {
   useSwapToTokenAmountAtom,
   useSwapTypeSwitchAtom,
 } from '../../../states/jotai/contexts/swap';
+import { getSwapQuoteProgressState } from '../../../states/jotai/contexts/swap/quoteProgress';
 import { buildSwapBatchTransferType } from '../utils/buildSwapReviewState';
 
-import { getSwapQuoteProgressState } from './swapQuoteProgress';
 import { useSwapAddressInfo } from './useSwapAccount';
 
 function useSwapWarningCheck() {

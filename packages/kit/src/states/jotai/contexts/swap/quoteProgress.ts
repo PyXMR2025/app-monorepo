@@ -103,7 +103,14 @@ export function selectSwapCurrentQuote({
     );
 
     if (manualQuote) {
-      return manualQuote;
+      if (isSwapQuoteActionable(manualQuote)) {
+        return manualQuote;
+      }
+
+      return (
+        selectBestQuote(currentEventSortedQuotes.filter(isSwapQuoteActionable)) ??
+        manualQuote
+      );
     }
 
     if (

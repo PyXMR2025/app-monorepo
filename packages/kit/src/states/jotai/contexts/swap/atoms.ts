@@ -47,6 +47,7 @@ import {
 import { createJotaiContext } from '../../utils/createJotaiContext';
 
 import {
+  type ISwapManualSelectQuoteProvider,
   buildSwapQuoteProviderKey,
   selectSwapCurrentQuote,
 } from './quoteProgress';
@@ -188,7 +189,7 @@ export const {
 export const {
   atom: swapManualSelectQuoteProvidersAtom,
   use: useSwapManualSelectQuoteProvidersAtom,
-} = contextAtom<IFetchQuoteResult | undefined>(undefined);
+} = contextAtom<ISwapManualSelectQuoteProvider | undefined>(undefined);
 
 export const { atom: swapQuoteListAtom, use: useSwapQuoteListAtom } =
   contextAtom<IFetchQuoteResult[]>([]);
@@ -245,10 +246,25 @@ export const {
 } = contextAtom<boolean>(false);
 
 export const {
+  atom: swapQuoteCurrentEventListAtom,
+  use: useSwapQuoteCurrentEventListAtom,
+} = contextAtomComputed<IFetchQuoteResult[]>((get) => {
+  const list = get(swapQuoteListAtom());
+  const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
+  const currentEventProviderKeys = get(swapQuoteCurrentEventProviderKeysAtom());
+  const currentEventProviderKeySet = new Set(currentEventProviderKeys);
+  return quoteEventTotalCount.count > 0
+    ? list.filter((quote) =>
+        currentEventProviderKeySet.has(buildSwapQuoteProviderKey(quote)),
+      )
+    : list;
+});
+
+export const {
   atom: swapSortedQuoteListAtom,
   use: useSwapSortedQuoteListAtom,
 } = contextAtomComputed<IFetchQuoteResult[]>((get) => {
-  const list = get(swapQuoteListAtom());
+  const list = get(swapQuoteCurrentEventListAtom());
   const fromTokenAmount = get(swapFromTokenAmountAtom());
   const sortType = get(swapProviderSortAtom());
   return sortSwapQuotes(list, {
@@ -261,25 +277,17 @@ export const {
   atom: swapQuoteCurrentSelectAtom,
   use: useSwapQuoteCurrentSelectAtom,
 } = contextAtomComputed((get) => {
-  const list = get(swapQuoteListAtom());
+  const list = get(swapQuoteCurrentEventListAtom());
   const fromTokenAmount = get(swapFromTokenAmountAtom());
-  const sortType = get(swapProviderSortAtom());
   const manualSelectQuoteProviders = get(swapManualSelectQuoteProvidersAtom());
   const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
   const currentEventProviderKeys = get(swapQuoteCurrentEventProviderKeysAtom());
-  const currentEventProviderKeySet = new Set(currentEventProviderKeys);
-  const currentEventQuoteList =
-    quoteEventTotalCount.count > 0
-      ? list.filter((quote) =>
-          currentEventProviderKeySet.has(buildSwapQuoteProviderKey(quote)),
-        )
-      : list;
-  const currentEventSortedList = sortSwapQuotes(currentEventQuoteList, {
-    sort: sortType,
+  const recommendedSortedList = sortSwapQuotes(list, {
+    sort: ESwapProviderSort.RECOMMENDED,
     fromTokenAmount: fromTokenAmount.value,
   });
   return selectSwapCurrentQuote({
-    sortedQuotes: currentEventSortedList,
+    currentEventSortedQuotes: recommendedSortedList,
     manualSelect: manualSelectQuoteProviders ?? undefined,
     quoteEventTotalCount,
     currentEventProviderKeys,

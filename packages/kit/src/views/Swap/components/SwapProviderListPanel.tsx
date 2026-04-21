@@ -31,7 +31,10 @@ import {
   useSwapSortedQuoteListAtom,
   useSwapTypeSwitchAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
-import { buildSwapQuoteProviderKey } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
+import {
+  buildSwapManualSelectQuoteProvider,
+  buildSwapQuoteProviderKey,
+} from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -358,7 +361,7 @@ const SwapProviderListPanel = ({
 
   const onSelectQuote = useCallback(
     (item: IFetchQuoteResult) => {
-      setSwapManualSelect(item);
+      setSwapManualSelect(buildSwapManualSelectQuoteProvider(item));
       defaultLogger.swap.providerChange.providerChange({
         changeFrom: currentSelectQuote?.info.provider ?? '-',
         changeTo: item.info.provider,

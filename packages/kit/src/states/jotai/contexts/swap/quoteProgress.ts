@@ -4,6 +4,16 @@ import { selectBestQuote } from '@onekeyhq/shared/src/utils/swapQuoteSortUtils';
 import type { IFetchQuoteResult } from '@onekeyhq/shared/types/swap/types';
 
 type ISwapActionableQuote = Pick<IFetchQuoteResult, 'toAmount'>;
+export type ISwapManualSelectQuoteProvider = Pick<
+  IFetchQuoteResult,
+  'eventId' | 'info'
+> &
+  Partial<
+    Pick<
+      IFetchQuoteResult,
+      'fromTokenInfo' | 'protocol' | 'quoteId' | 'toTokenInfo'
+    >
+  >;
 
 type ISwapQuoteProgressInput = {
   quoteLoading: boolean;
@@ -27,8 +37,8 @@ type ISwapQuoteEventFetchingInput = {
 };
 
 type ISwapCurrentQuoteInput = {
-  sortedQuotes: IFetchQuoteResult[];
-  manualSelect?: IFetchQuoteResult;
+  currentEventSortedQuotes: IFetchQuoteResult[];
+  manualSelect?: ISwapManualSelectQuoteProvider;
   quoteEventTotalCount: {
     count: number;
     eventId?: string;
@@ -40,6 +50,22 @@ export function buildSwapQuoteProviderKey(
   quote: Pick<IFetchQuoteResult, 'info'>,
 ) {
   return `${quote.info.provider}-${quote.info.providerName}`;
+}
+
+export function buildSwapManualSelectQuoteProvider(
+  quote: ISwapManualSelectQuoteProvider | undefined,
+): ISwapManualSelectQuoteProvider | undefined {
+  if (!quote) {
+    return undefined;
+  }
+
+  return {
+    eventId: quote.eventId,
+    info: {
+      provider: quote.info.provider,
+      providerName: quote.info.providerName,
+    },
+  };
 }
 
 export function hasSwapCurrentEventProvider(
@@ -66,18 +92,11 @@ export function isSwapQuoteEventFetching({
 }
 
 export function selectSwapCurrentQuote({
-  sortedQuotes,
+  currentEventSortedQuotes,
   manualSelect,
   quoteEventTotalCount,
   currentEventProviderKeys,
 }: ISwapCurrentQuoteInput) {
-  const currentEventProviderKeySet = new Set(currentEventProviderKeys);
-  const candidateQuotes =
-    quoteEventTotalCount.count > 0
-      ? sortedQuotes.filter((quote) =>
-          currentEventProviderKeySet.has(buildSwapQuoteProviderKey(quote)),
-        )
-      : sortedQuotes;
   const manualSelectInCurrentEvent =
     manualSelect &&
     (quoteEventTotalCount.count === 0 ||
@@ -85,9 +104,18 @@ export function selectSwapCurrentQuote({
         (!quoteEventTotalCount.eventId ||
           manualSelect.eventId === quoteEventTotalCount.eventId)));
 
-  return selectBestQuote(candidateQuotes, {
-    manualSelect: manualSelectInCurrentEvent ? manualSelect : undefined,
-  });
+  if (manualSelectInCurrentEvent) {
+    const manualQuote = currentEventSortedQuotes.find(
+      (quote) =>
+        buildSwapQuoteProviderKey(quote) ===
+        buildSwapQuoteProviderKey(manualSelect),
+    );
+    if (isSwapQuoteActionable(manualQuote)) {
+      return manualQuote;
+    }
+  }
+
+  return selectBestQuote(currentEventSortedQuotes);
 }
 
 export function isSwapQuoteActionable(

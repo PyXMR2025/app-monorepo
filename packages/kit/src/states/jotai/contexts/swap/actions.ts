@@ -693,20 +693,6 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                 quoteResultData.data?.length &&
                 quoteEventTotalCount.eventId === quoteResultData.data[0].eventId
               ) {
-                set(swapQuoteCurrentEventProviderKeysAtom(), (keys) => [
-                  ...new Set([
-                    ...keys,
-                    ...quoteResultData.data.map((quote) =>
-                      buildSwapQuoteProviderKey(quote),
-                    ),
-                  ]),
-                ]);
-                set(swapQuoteCurrentEventReceivedCountAtom(), (count) =>
-                  Math.min(
-                    quoteEventTotalCount.count,
-                    count + quoteResultData.data.length,
-                  ),
-                );
                 const quoteResultsUpdateSlippage = quoteResultData.data.map(
                   (quote) => {
                     if (
@@ -780,6 +766,20 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                       quoteEventTotalCount.eventId === q.eventId,
                   );
                 set(swapQuoteListAtom(), [...newQuoteList]);
+                set(swapQuoteCurrentEventProviderKeysAtom(), (keys) => [
+                  ...new Set([
+                    ...keys,
+                    ...quoteResultData.data.map((quote) =>
+                      buildSwapQuoteProviderKey(quote),
+                    ),
+                  ]),
+                ]);
+                set(swapQuoteCurrentEventReceivedCountAtom(), (count) =>
+                  Math.min(
+                    quoteEventTotalCount.count,
+                    count + quoteResultData.data.length,
+                  ),
+                );
               }
               set(swapQuoteFetchingAtom(), false);
             }

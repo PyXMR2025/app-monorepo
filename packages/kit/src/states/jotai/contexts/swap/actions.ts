@@ -208,7 +208,12 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
     const currentEventProviderKeys = get(
       swapQuoteCurrentEventProviderKeysAtom(),
     );
+    const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
+    const isManualSelectFromCurrentEvent =
+      !quoteEventTotalCount.eventId ||
+      manualSelectQuoteProvider.eventId === quoteEventTotalCount.eventId;
     if (
+      !isManualSelectFromCurrentEvent ||
       !currentEventProviderKeys.includes(
         buildSwapQuoteProviderKey(manualSelectQuoteProvider),
       )
@@ -2083,6 +2088,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       set(swapQuoteListAtom(), []);
       set(swapQuoteCurrentEventProviderKeysAtom(), []);
       set(swapQuoteCurrentEventReceivedCountAtom(), 0);
+      set(swapQuoteEventCompletedAtom(), false);
       set(swapQuoteEventTotalCountAtom(), { count: 0 });
       set(swapTypeSwitchAtom(), type);
       if (platformEnv.isNative && type === ESwapTabSwitchType.LIMIT) {

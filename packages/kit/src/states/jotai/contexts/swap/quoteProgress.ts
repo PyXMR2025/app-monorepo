@@ -34,7 +34,6 @@ type ISwapCurrentQuoteInput = {
     eventId?: string;
   };
   currentEventProviderKeys: string[];
-  quoteEventCompleted: boolean;
 };
 
 export function buildSwapQuoteProviderKey(
@@ -71,7 +70,6 @@ export function selectSwapCurrentQuote({
   manualSelect,
   quoteEventTotalCount,
   currentEventProviderKeys,
-  quoteEventCompleted,
 }: ISwapCurrentQuoteInput) {
   const currentEventProviderKeySet = new Set(currentEventProviderKeys);
   const candidateQuotes =
@@ -80,21 +78,15 @@ export function selectSwapCurrentQuote({
           currentEventProviderKeySet.has(buildSwapQuoteProviderKey(quote)),
         )
       : sortedQuotes;
-
-  if (
+  const manualSelectInCurrentEvent =
     manualSelect &&
-    quoteEventTotalCount.count > 0 &&
-    !hasSwapCurrentEventProvider(manualSelect, currentEventProviderKeys)
-  ) {
-    if (!quoteEventCompleted) {
-      return undefined;
-    }
-
-    return selectBestQuote(candidateQuotes);
-  }
+    (quoteEventTotalCount.count === 0 ||
+      (hasSwapCurrentEventProvider(manualSelect, currentEventProviderKeys) &&
+        (!quoteEventTotalCount.eventId ||
+          manualSelect.eventId === quoteEventTotalCount.eventId)));
 
   return selectBestQuote(candidateQuotes, {
-    manualSelect,
+    manualSelect: manualSelectInCurrentEvent ? manualSelect : undefined,
   });
 }
 

@@ -32,7 +32,7 @@ import {
   useSwapTypeSwitchAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
 import {
-  buildSwapManualSelectQuoteProvider,
+  buildSwapManualProviderSelectionIntent,
   buildSwapQuoteProviderKey,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
@@ -136,10 +136,13 @@ const SwapProviderListPanel = ({
   const [fromTokenAmount] = useSwapFromTokenAmountAtom();
   const [fromToken] = useSwapSelectFromTokenAtom();
   const [toToken] = useSwapSelectToTokenAtom();
-  const [, setSwapManualSelect] = useSwapManualSelectQuoteProvidersAtom();
+  const [manualSelectQuoteProvider, setSwapManualSelect] =
+    useSwapManualSelectQuoteProvidersAtom();
   const [providerSort, setProviderSort] = useSwapProviderSortAtom();
   const [settingsPersist] = useSettingsPersistAtom();
   const [currentSelectQuote] = useSwapQuoteCurrentSelectAtom();
+  const selectedProviderInfo =
+    currentSelectQuote?.info ?? manualSelectQuoteProvider?.info;
   const quoteLoading = useSwapQuoteLoading();
   const quoteEventFetching = useSwapQuoteEventFetching();
   const [swapTypeSwitch] = useSwapTypeSwitchAtom();
@@ -338,13 +341,13 @@ const SwapProviderListPanel = ({
     if (
       wasLoading &&
       !isLoading &&
-      currentSelectQuote &&
+      selectedProviderInfo &&
       availableList.length > 0
     ) {
       const selectedIndex = availableList.findIndex(
         (item) =>
-          item.info.provider === currentSelectQuote.info.provider &&
-          item.info.providerName === currentSelectQuote.info.providerName,
+          item.info.provider === selectedProviderInfo.provider &&
+          item.info.providerName === selectedProviderInfo.providerName,
       );
 
       if (selectedIndex > 0 && scrollViewRef.current) {
@@ -357,17 +360,17 @@ const SwapProviderListPanel = ({
         }, 100);
       }
     }
-  }, [isLoading, currentSelectQuote, availableList]);
+  }, [isLoading, selectedProviderInfo, availableList]);
 
   const onSelectQuote = useCallback(
     (item: IFetchQuoteResult) => {
-      setSwapManualSelect(buildSwapManualSelectQuoteProvider(item));
+      setSwapManualSelect(buildSwapManualProviderSelectionIntent(item));
       defaultLogger.swap.providerChange.providerChange({
-        changeFrom: currentSelectQuote?.info.provider ?? '-',
+        changeFrom: selectedProviderInfo?.provider ?? '-',
         changeTo: item.info.provider,
       });
     },
-    [setSwapManualSelect, currentSelectQuote?.info.provider],
+    [setSwapManualSelect, selectedProviderInfo?.provider],
   );
 
   const renderItem = useCallback(
@@ -405,8 +408,8 @@ const SwapProviderListPanel = ({
                 : undefined
             }
             selected={Boolean(
-              item.info.provider === currentSelectQuote?.info.provider &&
-              item.info.providerName === currentSelectQuote?.info.providerName,
+              item.info.provider === selectedProviderInfo?.provider &&
+              item.info.providerName === selectedProviderInfo?.providerName,
             )}
             fromTokenAmount={fromTokenAmount.value}
             fromToken={fromToken}
@@ -419,11 +422,11 @@ const SwapProviderListPanel = ({
       );
     },
     [
-      currentSelectQuote?.info.provider,
-      currentSelectQuote?.info.providerName,
       fromToken,
       fromTokenAmount,
       onSelectQuote,
+      selectedProviderInfo?.provider,
+      selectedProviderInfo?.providerName,
       settingsPersist.currencyInfo.symbol,
       toToken,
     ],

@@ -48,7 +48,7 @@ import {
   useSwapToTokenAmountAtom,
   useSwapTypeSwitchAtom,
 } from '../../../states/jotai/contexts/swap';
-import { buildSwapManualSelectQuoteProvider } from '../../../states/jotai/contexts/swap/quoteProgress';
+import { buildSwapManualProviderSelectionIntent } from '../../../states/jotai/contexts/swap/quoteProgress';
 import { truncateDecimalPlaces } from '../utils/utils';
 
 import { useSwapAddressInfo } from './useSwapAccount';
@@ -577,15 +577,8 @@ export function useSwapQuote() {
       if (swapShouldRefreshRef.current) {
         return;
       }
-      const approvedQuote = swapQuoteResultListRef.current.find(
-        (quote) =>
-          quote.quoteId === data.approvedSwapInfo?.quoteId ||
-          (quote.info.provider === data.approvedSwapInfo.provider &&
-            quote.info.providerName === data.approvedSwapInfo.providerName),
-      );
       setSwapManualSelectQuoteProviders(
-        buildSwapManualSelectQuoteProvider({
-          eventId: approvedQuote?.eventId,
+        buildSwapManualProviderSelectionIntent({
           info: {
             provider: data.approvedSwapInfo.provider,
             providerName: data.approvedSwapInfo.providerName,

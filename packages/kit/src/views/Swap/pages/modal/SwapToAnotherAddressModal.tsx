@@ -22,7 +22,7 @@ import {
   useSwapQuoteCurrentSelectAtom,
   useSwapToAnotherAccountAddressAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
-import { buildSwapManualSelectQuoteProvider } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
+import { buildSwapManualProviderSelectionIntent } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -130,7 +130,7 @@ const SwapToAnotherAddressPage = () => {
         accountInfo: activeAccount,
       }));
       setSwapManualSelectQuote(
-        buildSwapManualSelectQuoteProvider(selectedQuote),
+        buildSwapManualProviderSelectionIntent(selectedQuote),
       );
       navigation.pop();
     },

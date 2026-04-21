@@ -200,8 +200,8 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
   });
 
   reconcileManualSelectQuoteProviders = contextAtomMethod((get, set) => {
-    const manualSelectQuoteProvider = get(swapManualSelectQuoteProvidersAtom());
-    if (!manualSelectQuoteProvider) {
+    const selectionIntent = get(swapManualSelectQuoteProvidersAtom());
+    if (selectionIntent?.type !== 'manual-provider') {
       return;
     }
 
@@ -209,13 +209,10 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       swapQuoteCurrentEventProviderKeysAtom(),
     );
     const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
-    const isManualSelectFromCurrentEvent =
-      !quoteEventTotalCount.eventId ||
-      manualSelectQuoteProvider.eventId === quoteEventTotalCount.eventId;
     if (
-      !isManualSelectFromCurrentEvent ||
+      quoteEventTotalCount.count === 0 ||
       !currentEventProviderKeys.includes(
-        buildSwapQuoteProviderKey(manualSelectQuoteProvider),
+        buildSwapQuoteProviderKey(selectionIntent),
       )
     ) {
       set(swapManualSelectQuoteProvidersAtom(), undefined);
@@ -797,6 +794,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
           break;
         }
         case 'error': {
+          this.reconcileManualSelectQuoteProviders.call(set);
           set(swapQuoteEventCompletedAtom(), true);
           set(swapQuoteFetchingAtom(), false);
           set(swapQuoteActionLockAtom(), (v) => ({ ...v, actionLock: false }));
@@ -804,6 +802,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
           break;
         }
         case 'close': {
+          this.reconcileManualSelectQuoteProviders.call(set);
           set(swapQuoteEventCompletedAtom(), true);
           set(swapQuoteFetchingAtom(), false);
           set(swapQuoteActionLockAtom(), (v) => ({ ...v, actionLock: false }));

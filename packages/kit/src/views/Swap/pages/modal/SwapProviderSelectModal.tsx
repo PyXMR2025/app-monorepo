@@ -30,7 +30,7 @@ import {
   useSwapSortedQuoteListAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
 import {
-  buildSwapManualSelectQuoteProvider,
+  buildSwapManualProviderSelectionIntent,
   buildSwapQuoteProviderKey,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
@@ -76,10 +76,13 @@ const SwapProviderSelectModal = () => {
   const [fromTokenAmount] = useSwapFromTokenAmountAtom();
   const [fromToken] = useSwapSelectFromTokenAtom();
   const [toToken] = useSwapSelectToTokenAtom();
-  const [, setSwapManualSelect] = useSwapManualSelectQuoteProvidersAtom();
+  const [manualSelectQuoteProvider, setSwapManualSelect] =
+    useSwapManualSelectQuoteProvidersAtom();
   const [providerSort, setProviderSort] = useSwapProviderSortAtom();
   const [settingsPersist] = useSettingsPersistAtom();
   const [currentSelectQuote] = useSwapQuoteCurrentSelectAtom();
+  const selectedProviderInfo =
+    currentSelectQuote?.info ?? manualSelectQuoteProvider?.info;
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
   const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
   const currentEventProviderKeySet = useMemo(
@@ -160,14 +163,14 @@ const SwapProviderSelectModal = () => {
   }, [intl, quoteListForDisplay]);
   const onSelectQuote = useCallback(
     (item: IFetchQuoteResult) => {
-      setSwapManualSelect(buildSwapManualSelectQuoteProvider(item));
+      setSwapManualSelect(buildSwapManualProviderSelectionIntent(item));
       defaultLogger.swap.providerChange.providerChange({
-        changeFrom: currentSelectQuote?.info.provider ?? '-',
+        changeFrom: selectedProviderInfo?.provider ?? '-',
         changeTo: item.info.provider,
       });
       navigation.pop();
     },
-    [navigation, setSwapManualSelect, currentSelectQuote?.info.provider],
+    [navigation, setSwapManualSelect, selectedProviderInfo?.provider],
   );
   const renderItem = useCallback(
     ({ item }: { item: IFetchQuoteResult; index: number }) => {
@@ -197,8 +200,8 @@ const SwapProviderSelectModal = () => {
               : undefined
           }
           selected={Boolean(
-            item.info.provider === currentSelectQuote?.info.provider &&
-            item.info.providerName === currentSelectQuote?.info.providerName,
+            item.info.provider === selectedProviderInfo?.provider &&
+            item.info.providerName === selectedProviderInfo?.providerName,
           )}
           fromTokenAmount={fromTokenAmount.value}
           fromToken={fromToken}
@@ -210,11 +213,11 @@ const SwapProviderSelectModal = () => {
       );
     },
     [
-      currentSelectQuote?.info.provider,
-      currentSelectQuote?.info.providerName,
       fromToken,
       fromTokenAmount,
       onSelectQuote,
+      selectedProviderInfo?.provider,
+      selectedProviderInfo?.providerName,
       settingsPersist.currencyInfo.symbol,
       toToken,
     ],

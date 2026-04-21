@@ -4,16 +4,14 @@ import { selectBestQuote } from '@onekeyhq/shared/src/utils/swapQuoteSortUtils';
 import type { IFetchQuoteResult } from '@onekeyhq/shared/types/swap/types';
 
 type ISwapActionableQuote = Pick<IFetchQuoteResult, 'toAmount'>;
-export type ISwapManualSelectQuoteProvider = Pick<
-  IFetchQuoteResult,
-  'eventId' | 'info'
-> &
-  Partial<
-    Pick<
-      IFetchQuoteResult,
-      'fromTokenInfo' | 'protocol' | 'quoteId' | 'toTokenInfo'
-    >
-  >;
+type ISwapQuoteProviderIdentity = Pick<
+  IFetchQuoteResult['info'],
+  'provider' | 'providerName'
+>;
+export type ISwapQuoteSelectionIntent = {
+  type: 'manual-provider';
+  info: ISwapQuoteProviderIdentity;
+};
 
 type ISwapQuoteProgressInput = {
   quoteLoading: boolean;
@@ -38,7 +36,7 @@ type ISwapQuoteEventFetchingInput = {
 
 type ISwapCurrentQuoteInput = {
   currentEventSortedQuotes: IFetchQuoteResult[];
-  manualSelect?: ISwapManualSelectQuoteProvider;
+  selectionIntent?: ISwapQuoteSelectionIntent;
   quoteEventTotalCount: {
     count: number;
     eventId?: string;
@@ -46,21 +44,21 @@ type ISwapCurrentQuoteInput = {
   currentEventProviderKeys: string[];
 };
 
-export function buildSwapQuoteProviderKey(
-  quote: Pick<IFetchQuoteResult, 'info'>,
-) {
+export function buildSwapQuoteProviderKey(quote: {
+  info: ISwapQuoteProviderIdentity;
+}) {
   return `${quote.info.provider}-${quote.info.providerName}`;
 }
 
-export function buildSwapManualSelectQuoteProvider(
-  quote: ISwapManualSelectQuoteProvider | undefined,
-): ISwapManualSelectQuoteProvider | undefined {
+export function buildSwapManualProviderSelectionIntent(
+  quote: { info: ISwapQuoteProviderIdentity } | undefined,
+): ISwapQuoteSelectionIntent | undefined {
   if (!quote) {
     return undefined;
   }
 
   return {
-    eventId: quote.eventId,
+    type: 'manual-provider',
     info: {
       provider: quote.info.provider,
       providerName: quote.info.providerName,
@@ -69,7 +67,7 @@ export function buildSwapManualSelectQuoteProvider(
 }
 
 export function hasSwapCurrentEventProvider(
-  quote: Pick<IFetchQuoteResult, 'info'> | undefined,
+  quote: { info: ISwapQuoteProviderIdentity } | undefined,
   currentEventProviderKeys: string[],
 ) {
   if (!quote) {
@@ -93,25 +91,26 @@ export function isSwapQuoteEventFetching({
 
 export function selectSwapCurrentQuote({
   currentEventSortedQuotes,
-  manualSelect,
+  selectionIntent,
   quoteEventTotalCount,
   currentEventProviderKeys,
 }: ISwapCurrentQuoteInput) {
-  const manualSelectInCurrentEvent =
-    manualSelect &&
-    (quoteEventTotalCount.count === 0 ||
-      (hasSwapCurrentEventProvider(manualSelect, currentEventProviderKeys) &&
-        (!quoteEventTotalCount.eventId ||
-          manualSelect.eventId === quoteEventTotalCount.eventId)));
-
-  if (manualSelectInCurrentEvent) {
+  if (selectionIntent?.type === 'manual-provider') {
     const manualQuote = currentEventSortedQuotes.find(
       (quote) =>
         buildSwapQuoteProviderKey(quote) ===
-        buildSwapQuoteProviderKey(manualSelect),
+        buildSwapQuoteProviderKey(selectionIntent),
     );
-    if (isSwapQuoteActionable(manualQuote)) {
+
+    if (manualQuote) {
       return manualQuote;
+    }
+
+    if (
+      quoteEventTotalCount.count > 0 &&
+      !hasSwapCurrentEventProvider(selectionIntent, currentEventProviderKeys)
+    ) {
+      return undefined;
     }
   }
 

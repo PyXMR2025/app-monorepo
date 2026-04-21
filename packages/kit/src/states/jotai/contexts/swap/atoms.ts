@@ -47,7 +47,7 @@ import {
 import { createJotaiContext } from '../../utils/createJotaiContext';
 
 import {
-  type ISwapManualSelectQuoteProvider,
+  type ISwapQuoteSelectionIntent,
   buildSwapQuoteProviderKey,
   selectSwapCurrentQuote,
 } from './quoteProgress';
@@ -189,7 +189,7 @@ export const {
 export const {
   atom: swapManualSelectQuoteProvidersAtom,
   use: useSwapManualSelectQuoteProvidersAtom,
-} = contextAtom<ISwapManualSelectQuoteProvider | undefined>(undefined);
+} = contextAtom<ISwapQuoteSelectionIntent | undefined>(undefined);
 
 export const { atom: swapQuoteListAtom, use: useSwapQuoteListAtom } =
   contextAtom<IFetchQuoteResult[]>([]);
@@ -279,7 +279,7 @@ export const {
 } = contextAtomComputed((get) => {
   const list = get(swapQuoteCurrentEventListAtom());
   const fromTokenAmount = get(swapFromTokenAmountAtom());
-  const manualSelectQuoteProviders = get(swapManualSelectQuoteProvidersAtom());
+  const selectionIntent = get(swapManualSelectQuoteProvidersAtom());
   const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
   const currentEventProviderKeys = get(swapQuoteCurrentEventProviderKeysAtom());
   const recommendedSortedList = sortSwapQuotes(list, {
@@ -288,7 +288,7 @@ export const {
   });
   return selectSwapCurrentQuote({
     currentEventSortedQuotes: recommendedSortedList,
-    manualSelect: manualSelectQuoteProviders ?? undefined,
+    selectionIntent: selectionIntent ?? undefined,
     quoteEventTotalCount,
     currentEventProviderKeys,
   });

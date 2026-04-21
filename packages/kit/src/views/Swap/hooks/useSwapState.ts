@@ -18,7 +18,6 @@ import {
   swapSlippageAutoValue,
 } from '@onekeyhq/shared/types/swap/SwapProvider.constants';
 import type {
-  IFetchQuoteResult,
   ISwapCheckWarningDef,
   ISwapState,
 } from '@onekeyhq/shared/types/swap/types';
@@ -57,6 +56,7 @@ import {
 } from '../../../states/jotai/contexts/swap';
 import { buildSwapBatchTransferType } from '../utils/buildSwapReviewState';
 
+import { getSwapQuoteProgressState } from './swapQuoteProgress';
 import { useSwapAddressInfo } from './useSwapAccount';
 
 function useSwapWarningCheck() {
@@ -144,29 +144,20 @@ export function useSwapQuoteEventFetching() {
   return false;
 }
 
-export function isSwapQuoteActionable(
-  quoteCurrentSelect?: Pick<IFetchQuoteResult, 'toAmount' | 'limit'>,
-) {
-  return Boolean(quoteCurrentSelect?.toAmount || quoteCurrentSelect?.limit);
-}
-
 export function useSwapQuoteProgressState() {
   const quoteLoading = useSwapQuoteLoading();
   const quoteEventFetching = useSwapQuoteEventFetching();
   const [quoteCurrentSelect] = useSwapQuoteCurrentSelectAtom();
 
-  const hasActionableQuote = useMemo(
-    () => isSwapQuoteActionable(quoteCurrentSelect),
-    [quoteCurrentSelect],
+  return useMemo(
+    () =>
+      getSwapQuoteProgressState({
+        quoteLoading,
+        quoteEventFetching,
+        quoteCurrentSelect,
+      }),
+    [quoteCurrentSelect, quoteEventFetching, quoteLoading],
   );
-
-  return {
-    quoteLoading,
-    quoteEventFetching,
-    hasActionableQuote,
-    isWaitingActionableQuote:
-      quoteLoading || (quoteEventFetching && !hasActionableQuote),
-  };
 }
 
 export function useSwapBatchTransferType(

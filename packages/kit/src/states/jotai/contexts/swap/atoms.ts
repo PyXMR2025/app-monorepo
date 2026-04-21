@@ -232,6 +232,11 @@ export const {
 } = contextAtom<string[]>([]);
 
 export const {
+  atom: swapQuoteCurrentEventReceivedCountAtom,
+  use: useSwapQuoteCurrentEventReceivedCountAtom,
+} = contextAtom<number>(0);
+
+export const {
   atom: swapShouldRefreshQuoteAtom,
   use: useSwapShouldRefreshQuoteAtom,
 } = contextAtom<boolean>(false);

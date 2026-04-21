@@ -87,6 +87,7 @@ import {
   swapProUseSelectBuyTokenAtom,
   swapQuoteActionLockAtom,
   swapQuoteCurrentEventProviderKeysAtom,
+  swapQuoteCurrentEventReceivedCountAtom,
   swapQuoteCurrentSelectAtom,
   swapQuoteEventCompletedAtom,
   swapQuoteEventErrorAtom,
@@ -551,6 +552,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
             swapQuoteCurrentEventProviderKeysAtom(),
             currentEventProviderKeys,
           );
+          set(swapQuoteCurrentEventReceivedCountAtom(), res.length);
           set(swapQuoteEventCompletedAtom(), true);
           set(swapQuoteEventTotalCountAtom(), {
             count: res.length,
@@ -564,6 +566,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
               swapQuoteCurrentEventProviderKeysAtom(),
               currentEventProviderKeys,
             );
+            set(swapQuoteCurrentEventReceivedCountAtom(), res.length);
             set(swapQuoteEventCompletedAtom(), true);
             set(swapQuoteEventTotalCountAtom(), {
               count: res.length,
@@ -605,6 +608,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
             if (errorData?.errorMessage) {
               set(swapQuoteListAtom(), []);
               set(swapQuoteCurrentEventProviderKeysAtom(), []);
+              set(swapQuoteCurrentEventReceivedCountAtom(), 0);
               set(swapQuoteEventCompletedAtom(), true);
               set(swapQuoteEventTotalCountAtom(), { count: 0 });
               set(swapQuoteFetchingAtom(), false);
@@ -658,6 +662,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
             ) {
               const { totalQuoteCount } = dataJson as ISwapQuoteEventInfo;
               set(swapQuoteCurrentEventProviderKeysAtom(), []);
+              set(swapQuoteCurrentEventReceivedCountAtom(), 0);
               set(swapQuoteEventCompletedAtom(), false);
               set(swapQuoteEventTotalCountAtom(), {
                 eventId: (dataJson as ISwapQuoteEventInfo).eventId,
@@ -691,6 +696,12 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
                     ),
                   ]),
                 ]);
+                set(swapQuoteCurrentEventReceivedCountAtom(), (count) =>
+                  Math.min(
+                    quoteEventTotalCount.count,
+                    count + quoteResultData.data.length,
+                  ),
+                );
                 const quoteResultsUpdateSlippage = quoteResultData.data.map(
                   (quote) => {
                     if (
@@ -868,6 +879,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
     const toTokenAmount = get(swapToTokenAmountAtom());
     set(swapQuoteFetchingAtom(), false);
     set(swapQuoteCurrentEventProviderKeysAtom(), []);
+    set(swapQuoteCurrentEventReceivedCountAtom(), 0);
     set(swapQuoteEventCompletedAtom(), false);
     set(swapQuoteEventTotalCountAtom(), {
       count: 0,
@@ -948,6 +960,7 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
         set(swapQuoteIntervalCountAtom(), 0);
       }
       set(swapQuoteCurrentEventProviderKeysAtom(), []);
+      set(swapQuoteCurrentEventReceivedCountAtom(), 0);
       set(swapQuoteEventCompletedAtom(), false);
       set(swapBuildTxFetchingAtom(), false);
       set(swapShouldRefreshQuoteAtom(), false);
@@ -1228,12 +1241,12 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
         get(swapQuoteFetchingAtom()) || get(swapSilenceQuoteLoading());
       const quoteEventTotalCount = get(swapQuoteEventTotalCountAtom());
       const quoteEventCompleted = get(swapQuoteEventCompletedAtom());
-      const currentEventProviderKeys = get(
-        swapQuoteCurrentEventProviderKeysAtom(),
+      const currentEventReceivedCount = get(
+        swapQuoteCurrentEventReceivedCountAtom(),
       );
       const quoteEventFetching = isSwapQuoteEventFetching({
         quoteEventTotalCount,
-        currentEventProviderKeys,
+        currentEventReceivedCount,
         quoteEventCompleted,
       });
       const { isWaitingActionableQuote } = getSwapQuoteProgressState({
@@ -2068,6 +2081,8 @@ class ContentJotaiActionsSwap extends ContextJotaiActionsBase {
       }
       // OK-49718: Clear quote list when switching type to prevent showing stale data
       set(swapQuoteListAtom(), []);
+      set(swapQuoteCurrentEventProviderKeysAtom(), []);
+      set(swapQuoteCurrentEventReceivedCountAtom(), 0);
       set(swapQuoteEventTotalCountAtom(), { count: 0 });
       set(swapTypeSwitchAtom(), type);
       if (platformEnv.isNative && type === ESwapTabSwitchType.LIMIT) {

@@ -40,7 +40,7 @@ import {
   useSwapLimitPriceUseRateAtom,
   useSwapProTradeTypeAtom,
   useSwapQuoteApproveAllowanceUnLimitAtom,
-  useSwapQuoteCurrentEventProviderKeysAtom,
+  useSwapQuoteCurrentEventReceivedCountAtom,
   useSwapQuoteCurrentSelectAtom,
   useSwapQuoteEventCompletedAtom,
   useSwapQuoteEventTotalCountAtom,
@@ -135,11 +135,12 @@ export function useSwapQuoteLoading() {
 export function useSwapQuoteEventFetching() {
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
   const [quoteEventCompleted] = useSwapQuoteEventCompletedAtom();
-  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
+  const [currentEventReceivedCount] =
+    useSwapQuoteCurrentEventReceivedCountAtom();
 
   return isSwapQuoteEventFetching({
     quoteEventTotalCount,
-    currentEventProviderKeys,
+    currentEventReceivedCount,
     quoteEventCompleted,
   });
 }

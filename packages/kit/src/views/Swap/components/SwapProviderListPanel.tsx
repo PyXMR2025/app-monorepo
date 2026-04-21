@@ -23,6 +23,7 @@ import {
   useSwapManualSelectQuoteProvidersAtom,
   useSwapProviderSortAtom,
   useSwapQuoteCurrentEventProviderKeysAtom,
+  useSwapQuoteCurrentEventReceivedCountAtom,
   useSwapQuoteCurrentSelectAtom,
   useSwapQuoteEventTotalCountAtom,
   useSwapSelectFromTokenAtom,
@@ -140,6 +141,8 @@ const SwapProviderListPanel = ({
   const quoteEventFetching = useSwapQuoteEventFetching();
   const [swapTypeSwitch] = useSwapTypeSwitchAtom();
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
+  const [currentEventReceivedCount] =
+    useSwapQuoteCurrentEventReceivedCountAtom();
   const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
   const currentEventProviderKeySet = useMemo(
     () => new Set(currentEventProviderKeys),
@@ -683,10 +686,7 @@ const SwapProviderListPanel = ({
   // Number of skeleton placeholders for providers not yet received
   const remainingSkeletonCount =
     hasReceivedTotal && quoteEventFetching
-      ? Math.max(
-          0,
-          quoteEventTotalCount.count - currentEventProviderKeys.length,
-        )
+      ? Math.max(0, quoteEventTotalCount.count - currentEventReceivedCount)
       : 0;
 
   const contentArea = (

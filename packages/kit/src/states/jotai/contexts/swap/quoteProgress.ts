@@ -22,7 +22,7 @@ type ISwapQuoteEventFetchingInput = {
   quoteEventTotalCount: {
     count: number;
   };
-  currentEventProviderKeys: string[];
+  currentEventReceivedCount: number;
   quoteEventCompleted: boolean;
 };
 
@@ -56,13 +56,13 @@ export function hasSwapCurrentEventProvider(
 
 export function isSwapQuoteEventFetching({
   quoteEventTotalCount,
-  currentEventProviderKeys,
+  currentEventReceivedCount,
   quoteEventCompleted,
 }: ISwapQuoteEventFetchingInput) {
   return (
     quoteEventTotalCount.count > 0 &&
     !quoteEventCompleted &&
-    currentEventProviderKeys.length < quoteEventTotalCount.count
+    currentEventReceivedCount < quoteEventTotalCount.count
   );
 }
 

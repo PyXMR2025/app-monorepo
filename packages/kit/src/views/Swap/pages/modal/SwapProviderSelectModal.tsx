@@ -22,11 +22,13 @@ import {
   useSwapFromTokenAmountAtom,
   useSwapManualSelectQuoteProvidersAtom,
   useSwapProviderSortAtom,
+  useSwapQuoteCurrentEventProviderKeysAtom,
   useSwapQuoteCurrentSelectAtom,
   useSwapSelectFromTokenAtom,
   useSwapSelectToTokenAtom,
   useSwapSortedQuoteListAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
+import { isSwapManualSelectionPending } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -38,6 +40,7 @@ import { ESwapProviderSort } from '@onekeyhq/shared/types/swap/SwapProvider.cons
 import type { IFetchQuoteResult } from '@onekeyhq/shared/types/swap/types';
 
 import SwapProviderListItem from '../../components/SwapProviderListItem';
+import { useSwapQuoteEventFetching } from '../../hooks/useSwapState';
 import { SwapProviderMirror } from '../SwapProviderMirror';
 
 import type { RouteProp } from '@react-navigation/core';
@@ -70,10 +73,25 @@ const SwapProviderSelectModal = () => {
   const [fromTokenAmount] = useSwapFromTokenAmountAtom();
   const [fromToken] = useSwapSelectFromTokenAtom();
   const [toToken] = useSwapSelectToTokenAtom();
-  const [, setSwapManualSelect] = useSwapManualSelectQuoteProvidersAtom();
+  const [manualSelectQuote, setSwapManualSelect] =
+    useSwapManualSelectQuoteProvidersAtom();
   const [providerSort, setProviderSort] = useSwapProviderSortAtom();
   const [settingsPersist] = useSettingsPersistAtom();
   const [currentSelectQuote] = useSwapQuoteCurrentSelectAtom();
+  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
+  const quoteEventFetching = useSwapQuoteEventFetching();
+  const manualSelectionPending = useMemo(
+    () =>
+      isSwapManualSelectionPending({
+        quoteEventFetching,
+        manualSelect: manualSelectQuote ?? undefined,
+        currentEventProviderKeys,
+      }),
+    [currentEventProviderKeys, manualSelectQuote, quoteEventFetching],
+  );
+  const selectedQuote = manualSelectionPending
+    ? manualSelectQuote
+    : currentSelectQuote;
 
   const onSelectSortChange = useCallback(
     (value: ESwapProviderSort) => {
@@ -141,12 +159,12 @@ const SwapProviderSelectModal = () => {
     (item: IFetchQuoteResult) => {
       setSwapManualSelect(item);
       defaultLogger.swap.providerChange.providerChange({
-        changeFrom: currentSelectQuote?.info.provider ?? '-',
+        changeFrom: selectedQuote?.info.provider ?? '-',
         changeTo: item.info.provider,
       });
       navigation.pop();
     },
-    [navigation, setSwapManualSelect, currentSelectQuote?.info.provider],
+    [navigation, selectedQuote?.info.provider, setSwapManualSelect],
   );
   const renderItem = useCallback(
     ({ item }: { item: IFetchQuoteResult; index: number }) => {
@@ -176,8 +194,8 @@ const SwapProviderSelectModal = () => {
               : undefined
           }
           selected={Boolean(
-            item.info.provider === currentSelectQuote?.info.provider &&
-            item.info.providerName === currentSelectQuote?.info.providerName,
+            item.info.provider === selectedQuote?.info.provider &&
+            item.info.providerName === selectedQuote?.info.providerName,
           )}
           fromTokenAmount={fromTokenAmount.value}
           fromToken={fromToken}
@@ -189,11 +207,11 @@ const SwapProviderSelectModal = () => {
       );
     },
     [
-      currentSelectQuote?.info.provider,
-      currentSelectQuote?.info.providerName,
       fromToken,
       fromTokenAmount,
       onSelectQuote,
+      selectedQuote?.info.provider,
+      selectedQuote?.info.providerName,
       settingsPersist.currencyInfo.symbol,
       toToken,
     ],

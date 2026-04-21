@@ -9,6 +9,8 @@ type ISwapQuoteProgressInput = {
   quoteLoading: boolean;
   quoteEventFetching: boolean;
   quoteCurrentSelect?: ISwapActionableQuote;
+  manualSelect?: Pick<IFetchQuoteResult, 'info'>;
+  currentEventProviderKeys: string[];
 };
 
 type ISwapQuoteProgressState = {
@@ -16,6 +18,13 @@ type ISwapQuoteProgressState = {
   quoteEventFetching: boolean;
   hasActionableQuote: boolean;
   isWaitingActionableQuote: boolean;
+};
+
+type ISwapQuoteEventFetchingInput = {
+  quoteEventTotalCount: {
+    count: number;
+  };
+  currentEventProviderKeys: string[];
 };
 
 type ISwapCurrentQuoteInput = {
@@ -32,6 +41,27 @@ export function buildSwapQuoteProviderKey(
   quote: Pick<IFetchQuoteResult, 'info'>,
 ) {
   return `${quote.info.provider}-${quote.info.providerName}`;
+}
+
+export function hasSwapCurrentEventProvider(
+  quote: Pick<IFetchQuoteResult, 'info'> | undefined,
+  currentEventProviderKeys: string[],
+) {
+  if (!quote) {
+    return false;
+  }
+
+  return currentEventProviderKeys.includes(buildSwapQuoteProviderKey(quote));
+}
+
+export function isSwapQuoteEventFetching({
+  quoteEventTotalCount,
+  currentEventProviderKeys,
+}: ISwapQuoteEventFetchingInput) {
+  return (
+    quoteEventTotalCount.count > 0 &&
+    currentEventProviderKeys.length < quoteEventTotalCount.count
+  );
 }
 
 export function selectSwapCurrentQuote({
@@ -59,18 +89,41 @@ export function isSwapQuoteActionable(
   return new BigNumber(quoteCurrentSelect?.toAmount ?? 0).gt(0);
 }
 
+export function isSwapManualSelectionPending({
+  quoteEventFetching,
+  manualSelect,
+  currentEventProviderKeys,
+}: Pick<
+  ISwapQuoteProgressInput,
+  'quoteEventFetching' | 'manualSelect' | 'currentEventProviderKeys'
+>) {
+  if (!quoteEventFetching || !manualSelect) {
+    return false;
+  }
+
+  return !hasSwapCurrentEventProvider(manualSelect, currentEventProviderKeys);
+}
+
 export function getSwapQuoteProgressState({
   quoteLoading,
   quoteEventFetching,
   quoteCurrentSelect,
+  manualSelect,
+  currentEventProviderKeys,
 }: ISwapQuoteProgressInput): ISwapQuoteProgressState {
   const hasActionableQuote = isSwapQuoteActionable(quoteCurrentSelect);
+  const isManualSelectionPending = isSwapManualSelectionPending({
+    quoteEventFetching,
+    manualSelect,
+    currentEventProviderKeys,
+  });
 
   return {
     quoteLoading,
     quoteEventFetching,
     hasActionableQuote,
     isWaitingActionableQuote:
-      quoteLoading || (quoteEventFetching && !hasActionableQuote),
+      quoteLoading ||
+      (quoteEventFetching && (!hasActionableQuote || isManualSelectionPending)),
   };
 }

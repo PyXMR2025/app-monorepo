@@ -22,6 +22,7 @@ import {
   useSwapFromTokenAmountAtom,
   useSwapManualSelectQuoteProvidersAtom,
   useSwapProviderSortAtom,
+  useSwapQuoteCurrentEventProviderKeysAtom,
   useSwapQuoteCurrentSelectAtom,
   useSwapQuoteEventTotalCountAtom,
   useSwapSelectFromTokenAtom,
@@ -29,6 +30,7 @@ import {
   useSwapSortedQuoteListAtom,
   useSwapTypeSwitchAtom,
 } from '@onekeyhq/kit/src/states/jotai/contexts/swap';
+import { isSwapManualSelectionPending } from '@onekeyhq/kit/src/states/jotai/contexts/swap/quoteProgress';
 import { useSettingsPersistAtom } from '@onekeyhq/kit-bg/src/states/jotai/atoms';
 import { ETranslations } from '@onekeyhq/shared/src/locale';
 import { defaultLogger } from '@onekeyhq/shared/src/logger/logger';
@@ -130,7 +132,8 @@ const SwapProviderListPanel = ({
   const [fromTokenAmount] = useSwapFromTokenAmountAtom();
   const [fromToken] = useSwapSelectFromTokenAtom();
   const [toToken] = useSwapSelectToTokenAtom();
-  const [, setSwapManualSelect] = useSwapManualSelectQuoteProvidersAtom();
+  const [manualSelectQuote, setSwapManualSelect] =
+    useSwapManualSelectQuoteProvidersAtom();
   const [providerSort, setProviderSort] = useSwapProviderSortAtom();
   const [settingsPersist] = useSettingsPersistAtom();
   const [currentSelectQuote] = useSwapQuoteCurrentSelectAtom();
@@ -138,6 +141,19 @@ const SwapProviderListPanel = ({
   const quoteEventFetching = useSwapQuoteEventFetching();
   const [swapTypeSwitch] = useSwapTypeSwitchAtom();
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
+  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
+  const manualSelectionPending = useMemo(
+    () =>
+      isSwapManualSelectionPending({
+        quoteEventFetching,
+        manualSelect: manualSelectQuote ?? undefined,
+        currentEventProviderKeys,
+      }),
+    [currentEventProviderKeys, manualSelectQuote, quoteEventFetching],
+  );
+  const selectedQuote = manualSelectionPending
+    ? manualSelectQuote
+    : currentSelectQuote;
 
   // Cache the previous list to show during refresh (prevents flash to empty)
   const cachedListRef = useRef<IFetchQuoteResult[]>([]);
@@ -312,16 +328,11 @@ const SwapProviderListPanel = ({
     prevIsLoadingRef.current = isLoading;
 
     // Only scroll when loading just completed (transition from loading to not loading)
-    if (
-      wasLoading &&
-      !isLoading &&
-      currentSelectQuote &&
-      availableList.length > 0
-    ) {
+    if (wasLoading && !isLoading && selectedQuote && availableList.length > 0) {
       const selectedIndex = availableList.findIndex(
         (item) =>
-          item.info.provider === currentSelectQuote.info.provider &&
-          item.info.providerName === currentSelectQuote.info.providerName,
+          item.info.provider === selectedQuote.info.provider &&
+          item.info.providerName === selectedQuote.info.providerName,
       );
 
       if (selectedIndex > 0 && scrollViewRef.current) {
@@ -334,17 +345,17 @@ const SwapProviderListPanel = ({
         }, 100);
       }
     }
-  }, [isLoading, currentSelectQuote, availableList]);
+  }, [availableList, isLoading, selectedQuote]);
 
   const onSelectQuote = useCallback(
     (item: IFetchQuoteResult) => {
       setSwapManualSelect(item);
       defaultLogger.swap.providerChange.providerChange({
-        changeFrom: currentSelectQuote?.info.provider ?? '-',
+        changeFrom: selectedQuote?.info.provider ?? '-',
         changeTo: item.info.provider,
       });
     },
-    [setSwapManualSelect, currentSelectQuote?.info.provider],
+    [selectedQuote?.info.provider, setSwapManualSelect],
   );
 
   const renderItem = useCallback(
@@ -382,8 +393,8 @@ const SwapProviderListPanel = ({
                 : undefined
             }
             selected={Boolean(
-              item.info.provider === currentSelectQuote?.info.provider &&
-              item.info.providerName === currentSelectQuote?.info.providerName,
+              item.info.provider === selectedQuote?.info.provider &&
+              item.info.providerName === selectedQuote?.info.providerName,
             )}
             fromTokenAmount={fromTokenAmount.value}
             fromToken={fromToken}
@@ -396,11 +407,11 @@ const SwapProviderListPanel = ({
       );
     },
     [
-      currentSelectQuote?.info.provider,
-      currentSelectQuote?.info.providerName,
       fromToken,
       fromTokenAmount,
       onSelectQuote,
+      selectedQuote?.info.provider,
+      selectedQuote?.info.providerName,
       settingsPersist.currencyInfo.symbol,
       toToken,
     ],

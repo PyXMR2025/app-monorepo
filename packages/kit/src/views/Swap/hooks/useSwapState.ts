@@ -38,13 +38,14 @@ import {
   useSwapBuildTxFetchingAtom,
   useSwapFromTokenAmountAtom,
   useSwapLimitPriceUseRateAtom,
+  useSwapManualSelectQuoteProvidersAtom,
   useSwapProTradeTypeAtom,
   useSwapQuoteApproveAllowanceUnLimitAtom,
+  useSwapQuoteCurrentEventProviderKeysAtom,
   useSwapQuoteCurrentSelectAtom,
   useSwapQuoteEventTotalCountAtom,
   useSwapQuoteFetchingAtom,
   useSwapQuoteIntervalCountAtom,
-  useSwapQuoteListAtom,
   useSwapSelectFromTokenAtom,
   useSwapSelectToTokenAtom,
   useSwapSelectedFromTokenBalanceAtom,
@@ -54,7 +55,10 @@ import {
   useSwapToTokenAmountAtom,
   useSwapTypeSwitchAtom,
 } from '../../../states/jotai/contexts/swap';
-import { getSwapQuoteProgressState } from '../../../states/jotai/contexts/swap/quoteProgress';
+import {
+  getSwapQuoteProgressState,
+  isSwapQuoteEventFetching,
+} from '../../../states/jotai/contexts/swap/quoteProgress';
 import { buildSwapBatchTransferType } from '../utils/buildSwapReviewState';
 
 import { useSwapAddressInfo } from './useSwapAccount';
@@ -130,24 +134,20 @@ export function useSwapQuoteLoading() {
 
 export function useSwapQuoteEventFetching() {
   const [quoteEventTotalCount] = useSwapQuoteEventTotalCountAtom();
-  const [quoteResult] = useSwapQuoteListAtom();
+  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
 
-  if (quoteEventTotalCount.count > 0) {
-    if (
-      quoteResult?.every((q) => q.eventId === quoteEventTotalCount.eventId) &&
-      quoteResult.length === quoteEventTotalCount.count
-    ) {
-      return false;
-    }
-    return true;
-  }
-  return false;
+  return isSwapQuoteEventFetching({
+    quoteEventTotalCount,
+    currentEventProviderKeys,
+  });
 }
 
 export function useSwapQuoteProgressState() {
   const quoteLoading = useSwapQuoteLoading();
   const quoteEventFetching = useSwapQuoteEventFetching();
   const [quoteCurrentSelect] = useSwapQuoteCurrentSelectAtom();
+  const [manualSelectQuote] = useSwapManualSelectQuoteProvidersAtom();
+  const [currentEventProviderKeys] = useSwapQuoteCurrentEventProviderKeysAtom();
 
   return useMemo(
     () =>
@@ -155,8 +155,16 @@ export function useSwapQuoteProgressState() {
         quoteLoading,
         quoteEventFetching,
         quoteCurrentSelect,
+        manualSelect: manualSelectQuote ?? undefined,
+        currentEventProviderKeys,
       }),
-    [quoteCurrentSelect, quoteEventFetching, quoteLoading],
+    [
+      currentEventProviderKeys,
+      manualSelectQuote,
+      quoteCurrentSelect,
+      quoteEventFetching,
+      quoteLoading,
+    ],
   );
 }
 
